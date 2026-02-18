@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify
-import spotipy
+from flask import Flask, request, jsonify #web framework for API
+import spotipy #python client for Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
-import os
-import json
+import os #loads api keys securely from .env
+import json #for analyzing AI's JSON responses
 import re
-from dotenv import load_dotenv
-from groq import Groq
+from dotenv import load_dotenv 
+from groq import Groq 
 
 load_dotenv()
 
@@ -27,13 +27,15 @@ BPM_RANGES = {
     "high":   (115, 200),  # energetic, party, gym
 }
 
-
+#converts AI's raw text response into JSON
 def parse_json_safe(text):
     text = re.sub(r"```(?:json)?\s*", "", text).strip()
     text = text.replace("```", "").strip()
     return json.loads(text)
 
-
+#this function uses groq AI to analyze the user's text input 
+# and extract key information about their music preferences.
+# It returns this information in a structured JSON format for further processing.
 def parse_request(user_text):
     """Single AI call — extracts artist, mood, context, energy, genre."""
     try:
@@ -70,7 +72,7 @@ Return ONLY this JSON:
 """
                 }
             ],
-            temperature=0
+            temperature=0 #ensures consistent output, no randomness
         )
         raw = response.choices[0].message.content
         print("AI parse:", raw)
@@ -91,6 +93,8 @@ Return ONLY this JSON:
         return {"artist": None, "mood": "general", "context": "general", "energy": "medium", "genre_hint": "pop"}
 
 
+# This is the core function where we ask the AI to estimate the BPM, energy, and valence for each track,
+# and then use those estimates to filter the tracks based on the user's requirements.
 def estimate_features_for_tracks(tracks, mood, energy):
     """
     AI estimates BPM, energy, valence per track.
@@ -149,10 +153,11 @@ Return a JSON array in the exact same order, nothing else:
         }
         return [defaults[energy]] * len(tracks)
 
-
+#
 def filter_by_bpm(playlist, energy):
     """
     Filter out tracks whose BPM doesn't match the requested energy level.
+    we use the three predefined BPM ranges for low, medium, and high energy.
     If filtering removes everything, relax the range by ±15 BPM and try again.
     If still nothing, return all sorted by BPM closeness to target.
     """
@@ -178,11 +183,15 @@ def filter_by_bpm(playlist, energy):
     return sorted(playlist, key=lambda t: abs(t.get("bpm", 999) - target_mid))
 
 
+# Basic health check endpoint
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({"status": "Moodify AI Backend Running 🎧"})
 
 
+# This is the main endpoint that handles music recommendation requests.
+# Also the part where we combine all the steps: parsing user input, searching Spotify, estimating features, and filtering tracks.
+# This is where we send our api response back to the local url using hoppscotch.io
 @app.route("/recommend", methods=["POST"])
 def recommend():
     try:
@@ -240,19 +249,6 @@ def recommend():
                 or t["artists"][0]["name"].lower() in artist.lower()
             ]
             tracks = filtered if filtered else tracks
-
-        # Step 4: Popularity filter
-        # Spotify gives each track a popularity score 0-100
-        # We deliberately prefer less popular tracks (below 65)
-        # but keep a fallback so we don't end up empty
-        popular_cutoff = 65
-        deeper_cuts = [t for t in tracks if t.get("popularity", 100) <= popular_cutoff]
-        tracks = deeper_cuts if len(deeper_cuts) >= 5 else tracks
-
-        print(f"Tracks after popularity filter (≤{popular_cutoff}): {len(tracks)}")
-
-        # Sort by popularity ascending so least popular come first
-        tracks = sorted(tracks, key=lambda t: t.get("popularity", 50))
 
         tracks = tracks[:15]
 

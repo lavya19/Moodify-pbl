@@ -1,0 +1,8 @@
+flask
+spotipy
+python-dotenv
+flask-cors
+spacy
+transformers
+torch
+requests

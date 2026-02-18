@@ -186,7 +186,11 @@ def filter_by_bpm(playlist, energy):
 # Basic health check endpoint
 @app.route("/", methods=["GET"])
 def home():
-    return jsonify({"status": "Moodify AI Backend Running 🎧"})
+    return jsonify({
+        "status": "Moodify AI Backend Running 🎧",
+        "groq": "✅" if os.getenv("GROQ_API_KEY") else "❌ Missing API key",
+        "spotify": "✅" if os.getenv("SPOTIFY_CLIENT_ID") else "❌ Missing API key"
+    })
 
 
 # This is the main endpoint that handles music recommendation requests.

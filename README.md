@@ -23,5 +23,5 @@ Moodify is an AI-assisted music recommendation backend that uses:
 ```Terminal
 cd moodify-backend
 venv\Scripts\activate
-pip install -r requirements
+pip install -r requirements.txt
 python app.py

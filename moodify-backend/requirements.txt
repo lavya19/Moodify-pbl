@@ -1,8 +1,6 @@
 flask
 spotipy
 python-dotenv
-flask-cors
-spacy
-transformers
-torch
+openai
 requests
+groq

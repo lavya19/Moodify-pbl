@@ -2,7 +2,7 @@
 
 Moodify is an AI-assisted music recommendation backend that uses:
 - Spotify API (Spotipy)
-- NLP (spaCy)
+- Groq's LLaMA 3.3 model
 - Transformer-based context understanding
 - Flask REST API architecture
 
